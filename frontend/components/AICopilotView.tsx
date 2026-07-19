@@ -135,7 +135,12 @@ export default function AICopilotView() {
   setIsTyping(true);
 
   try {
-    const response = await aiApi.askQuestion(text);
+    const history = messages.map((msg) => ({
+    role: msg.sender === "user" ? "user" : "assistant",
+    content: msg.text,
+    }));
+
+    const response = await aiApi.askQuestion(text, history);
 
     let reply = response.answer ?? "No relevant information found.";
 

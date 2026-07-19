@@ -20,7 +20,15 @@ router = APIRouter(
 )
 
 class QueryRequest(BaseModel):
-    question: str = Field(..., description="The semantic search query question to run against the vector knowledge base.")
+    question: str = Field(
+        ...,
+        description="The semantic search query question."
+    )
+
+    history: list = Field(
+        default_factory=list,
+        description="Previous conversation history."
+    )
 
 
 @router.post("", status_code=status.HTTP_200_OK)
@@ -42,7 +50,10 @@ async def query_knowledge_base(request: QueryRequest):
 
     try:
         # Call the query service
-        result = search_documents(query=question)
+        result = search_documents(
+        query=question,
+        history=request.history
+        )
         
         # If search service returns success=False, return HTTP 400 Bad Request
         if not result.get("success", False):

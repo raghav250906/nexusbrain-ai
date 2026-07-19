@@ -31,6 +31,7 @@ METADATA_FILE = os.path.join(UPLOAD_DIR, "documents.json")
 
 def search_documents(
     query: str,
+    history: list = None,
     k: int = 5,
     vector_store_dir: str = DEFAULT_VECTOR_STORE_DIR
 ) -> Dict[str, Any]:
@@ -121,9 +122,27 @@ def search_documents(
         print(context)
         print("=" * 80)
 
+        if history is None:
+            history = []
+
+        conversation = ""
+
+        for msg in history:
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            conversation += f"{role}: {content}\n"
+
+        full_context = f"""
+        Previous Conversation:
+        {conversation}
+
+        Retrieved Documents:
+        {context}
+        """
+
         answer = generate_answer(
             question=query,
-            context=context
+            context=full_context
         )
 
         # Load filename mapping

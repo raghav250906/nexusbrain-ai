@@ -10,9 +10,13 @@ const api = axios.create({
 export default api;
 
 export const aiApi = {
-  askQuestion: async (question: string) => {
+  askQuestion: async (
+    question: string,
+    history: { role: string; content: string }[] = []
+  ) => {
     const response = await api.post("/query", {
       question,
+      history,
     });
 
     return response.data;
