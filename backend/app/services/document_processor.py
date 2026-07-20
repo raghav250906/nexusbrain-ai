@@ -1,3 +1,5 @@
+from app.services.gemini_service import generate_summary
+from app.services.graph_service import extract_entities
 import os
 import logging
 from typing import Dict, Any, List
@@ -96,6 +98,11 @@ def process_document(
     try:
         # Load raw content as LangChain Documents
         raw_docs = load_document(file_path)
+        full_text = "\n".join(doc.page_content for doc in raw_docs)
+
+        summary = generate_summary(full_text[:12000])
+
+        entities = extract_entities(full_text[:12000])
         if not raw_docs:
             logger.warning(f"Document loaded but returned empty content: {file_path}")
             return {
@@ -116,7 +123,7 @@ def process_document(
                 ""
             ]
         )
-
+        
         chunks = splitter.split_documents(raw_docs)
         chunk_count = len(chunks)
         logger.info(f"Finished splitting. Created {chunk_count} chunk(s).")
@@ -167,8 +174,10 @@ def process_document(
         logger.info("FAISS saved successfully.")
 
         return {
-            "status": "indexed",
-            "chunks": chunk_count
+        "status": "indexed",
+        "chunks": chunk_count,
+        "summary": summary,
+        "entities": entities
         }
 
     except Exception as e:

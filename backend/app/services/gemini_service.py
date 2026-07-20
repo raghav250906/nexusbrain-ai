@@ -71,3 +71,45 @@ Rules:
             last_error = e
 
     raise RuntimeError(f"All Gemini models failed.\nLast error: {last_error}")
+
+def generate_summary(text: str) -> str:
+    """
+    Generates a short executive summary of a document.
+    """
+
+    prompt = f"""
+You are NexusBrain AI.
+
+Generate a concise executive summary of the following document.
+
+Rules:
+- Maximum 120 words.
+- Focus only on the document content.
+- No bullet points.
+- No markdown.
+- No assumptions.
+- Professional business language.
+
+================ DOCUMENT ================
+
+{text}
+
+================ SUMMARY ================
+"""
+
+    last_error = None
+
+    for model in MODELS:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+
+            if response.text:
+                return response.text.strip()
+
+        except Exception as e:
+            last_error = e
+
+    raise RuntimeError(last_error)

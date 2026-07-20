@@ -1,3 +1,4 @@
+import api from "../lib/api";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -16,19 +17,15 @@ import {
   Maximize2
 } from 'lucide-react';
 import PageHeader from './PageHeader';
-import { NodeItem, LinkItem } from '../types';
-
+interface NodeItem {
+  id: string;
+  label: string;
+  type: "entity" | "document" | "concept" | "agent";
+  val: number;
+  connections: string[];
+}
 export default function KnowledgeGraphView() {
-  const [nodes, setNodes] = useState<NodeItem[]>([
-    { id: '1', label: 'Tenant corp-nexus-01', type: 'entity', val: 12, connections: ['2', '3', '4'] },
-    { id: '2', label: 'Q3 Financials Asset', type: 'document', val: 8, connections: ['1', '5'] },
-    { id: '3', label: 'GDPR Compliance Check', type: 'concept', val: 15, connections: ['1', '6', '7'] },
-    { id: '4', label: 'AI Reasoning Agent v4', type: 'agent', val: 10, connections: ['1', '8'] },
-    { id: '5', label: 'Revenue Forecasting Matrix', type: 'concept', val: 6, connections: ['2'] },
-    { id: '6', label: 'Data Residency Regulations', type: 'concept', val: 7, connections: ['3'] },
-    { id: '7', label: 'EU Privacy Sandbox', type: 'concept', val: 5, connections: ['3', '8'] },
-    { id: '8', label: 'Automated Compliance Auditor', type: 'agent', val: 9, connections: ['4', '7'] },
-  ]);
+  const [nodes, setNodes] = useState<NodeItem[]>([]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string>('1');
   const [density, setDensity] = useState<'low' | 'medium' | 'high'>('medium');
@@ -38,7 +35,21 @@ export default function KnowledgeGraphView() {
   const [newNodeLabel, setNewNodeLabel] = useState('');
   const [newNodeType, setNewNodeType] = useState<'concept' | 'entity' | 'document' | 'agent'>('concept');
   const [newNodeConnection, setNewNodeConnection] = useState('1');
+  React.useEffect(() => {
+  loadGraph();
+}, []);
 
+const loadGraph = async () => {
+  try {
+    const res = await api.get("/graph");
+
+    if (res.data.success) {
+      setNodes(res.data.nodes);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
   const handleAddNode = (e: React.FormEvent) => {
@@ -73,12 +84,12 @@ export default function KnowledgeGraphView() {
     if (id === '1') return; // protect tenant core node
     setNodes(prev => prev.filter(n => n.id !== id).map(n => ({
       ...n,
-      connections: n.connections.filter(c => c !== id)
+      connections: n.connections.filter((c: string) => c !== id)
     })));
     setSelectedNodeId('1');
   };
 
-  const filteredNodes = nodes.filter(n => 
+  const filteredNodes = nodes.filter(n =>
     n.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -152,7 +163,7 @@ export default function KnowledgeGraphView() {
                 <g className="stroke-[#1E293B] stroke-1.5">
                   {nodes.map((sourceNode, sIdx) => {
                     const sourceCoord = getCoordinates(sourceNode.id, sIdx);
-                    return sourceNode.connections.map((targetId) => {
+                    return sourceNode.connections.map((targetId:string) => {
                       const tIdx = nodes.findIndex(n => n.id === targetId);
                       if (tIdx === -1) return null;
                       const targetNode = nodes[tIdx];
@@ -317,7 +328,7 @@ export default function KnowledgeGraphView() {
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold block uppercase mb-1.5">Direct Proximities</span>
                     <div className="space-y-1">
-                      {selectedNode.connections.map(id => {
+                      {selectedNode.connections.map((id: string) => {
                         const target = nodes.find(n => n.id === id);
                         if (!target) return null;
                         return (

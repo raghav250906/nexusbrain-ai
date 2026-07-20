@@ -50,6 +50,10 @@ export default function DocumentsView() {
   const [isUploading, setIsUploading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [lastSummary, setLastSummary] = useState<{
+    file: string;
+    summary: string;
+    } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -66,21 +70,35 @@ export default function DocumentsView() {
       const response = await documentApi.get("/documents");
       const data = response.data;
       if (data.success && Array.isArray(data.documents)) {
+
   setDocuments(
-  data.documents.map((doc: any) => ({
-    id: doc.id,
-    name: doc.name,
-    status: doc.status,
-    type: (doc.file_type || "")
-      .replace(".", "")
-      .toUpperCase(),
-    uploadedAt: "-",
-    size: `${(doc.size / 1024).toFixed(1)} KB`,
-    tokens: 0,
-    progress: undefined,
-  }))
-);
+    data.documents.map((doc: any) => ({
+      id: doc.id,
+      name: doc.name,
+      status: doc.status,
+      type: (doc.file_type || "")
+        .replace(".", "")
+        .toUpperCase(),
+      uploadedAt: "-",
+      size: `${(doc.size / 1024).toFixed(1)} KB`,
+      tokens: 0,
+      progress: undefined,
+    }))
+  );
+
+  if (data.documents.length > 0) {
+    const latest = data.documents[data.documents.length - 1];
+
+    setLastSummary({
+      file: latest.original_name,
+      summary: latest.summary,
+    });
+  } else {
+    setLastSummary(null);
+  }
+
   setIsConnected(true);
+
 } else {
   console.warn("Unexpected API response:", data);
 }
@@ -201,7 +219,14 @@ export default function DocumentsView() {
       : d
   )
 );
-          showToast(`Ingested: ${file.name}`, 'success');
+          showToast(`Ingested: ${file.name}`, "success");
+
+          if (uploadedDoc.data.indexing?.summary) {
+          setLastSummary({
+          file: uploadedDoc.data.original_name,
+          summary: uploadedDoc.data.indexing.summary,
+          });
+          }
           await fetchDocuments();
         } catch (err) {
           console.error('Error uploading file:', err);
@@ -324,7 +349,23 @@ export default function DocumentsView() {
           </div>
         </div>
       </div>
+      {lastSummary && (
+        <div className="bg-[#0B0E14] border border-slate-800 rounded-sm p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">
+              AI Document Summary
+            </h3>
 
+            <span className="text-[10px] text-slate-500 uppercase">
+              {lastSummary.file}
+            </span>
+          </div>
+
+          <p className="text-sm text-slate-300 whitespace-pre-line leading-7">
+            {lastSummary.summary}
+          </p>
+        </div>
+      )}
       {/* Main split grid: Dropzone & Files Table */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         

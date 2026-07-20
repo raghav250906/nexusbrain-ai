@@ -11,6 +11,8 @@ from app.services.document_processor import (
     rebuild_vector_store,
 )
 
+from app.services.graph_service import extract_entities
+
 # Set up logging
 logger = logging.getLogger("documents_api")
 if not logger.handlers:
@@ -77,7 +79,8 @@ async def list_documents() -> Dict[str, Any]:
                     "stored_name": filename,
                     "file_type": ext,
                     "size": file_size,
-                    "status": "indexed"
+                    "status": "indexed",
+                    "summary": info.get("summary", "")
                 })
 
         return {
@@ -142,10 +145,12 @@ async def upload_document(file: UploadFile = File(...)) -> Dict[str, Any]:
             metadata = {}
 
         metadata[stored_filename] = {
-            "original_name": file.filename,
-            "stored_name": stored_filename,
-            "size": file_size,
-            "file_type": extension
+        "original_name": file.filename,
+        "stored_name": stored_filename,
+        "size": file_size,
+        "file_type": extension,
+        "summary": indexing_result.get("summary", ""),
+        "entities": indexing_result.get("entities", [])
         }
 
         with open(METADATA_FILE, "w") as f:
